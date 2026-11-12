@@ -1,0 +1,125 @@
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Fri, 29 Aug 2025 12:41:27 +0200
+Subject: tests/wayland/toplevel-suspend: Add test for suspending on screen
+ shield
+
+The test imitates what GNOME Shell effectively does, which is hiding the
+two window groups.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4588>
+
+Backported to 46.2: 46.2 does not have meta_compositor_get_window_group()
+and meta_compositor_get_top_window_group(), so the test driver uses
+meta_get_window_group_for_display() and
+meta_get_top_window_group_for_display(), and test_screen_shield() follows
+test_obstructed_clone() because 46.2 does not have test_delayed_map().
+
+Origin: backport, https://gitlab.gnome.org/GNOME/mutter/-/commit/79a73f919c579f1a5b67402f306311048bd98126
+Applied-Upstream: 49.rc
+---
+ src/tests/wayland-test-clients/xdg-toplevel-suspended.c |   27 ++++++++++++++
+ src/tests/wayland-unit-tests.c                          |   29 ++++++++++++++++
+ 2 files changed, 56 insertions(+)
+
+--- a/src/tests/wayland-test-clients/xdg-toplevel-suspended.c
++++ b/src/tests/wayland-test-clients/xdg-toplevel-suspended.c
+@@ -28,6 +28,8 @@ enum
+   XDG_TOPLEVEL_SUSPENDED_COMMAND_PREV_WORKSPACE = 1,
+   XDG_TOPLEVEL_SUSPENDED_COMMAND_ACTIVATE_WINDOW = 2,
+   XDG_TOPLEVEL_SUSPENDED_COMMAND_CLONE = 3,
++  XDG_TOPLEVEL_SUSPENDED_COMMAND_SHOW_SCREEN_SHIELD = 4,
++  XDG_TOPLEVEL_SUSPENDED_COMMAND_HIDE_SCREEN_SHIELD = 5,
+ };
+ 
+ static void
+@@ -190,6 +192,30 @@ test_obstructed_clone (WaylandDisplay *d
+   wait_for_no_state (surface, XDG_TOPLEVEL_STATE_SUSPENDED);
+ }
+ 
++static void
++test_screen_shield (WaylandDisplay *display)
++{
++  g_autoptr (WaylandSurface) surface = NULL;
++
++  g_debug ("Testing suspended state when showing screen shield");
++
++  surface = wayland_surface_new (display, __func__, 100, 100, 0xffffffff);
++  wl_surface_commit (surface->wl_surface);
++
++  wait_for_window_shown (display, surface->wl_surface);
++  g_assert_false (wayland_surface_has_state (surface,
++                                             XDG_TOPLEVEL_STATE_SUSPENDED));
++
++  test_driver_sync_point (display->test_driver,
++                          XDG_TOPLEVEL_SUSPENDED_COMMAND_SHOW_SCREEN_SHIELD,
++                          surface->wl_surface);
++  wait_for_state (surface, XDG_TOPLEVEL_STATE_SUSPENDED);
++  test_driver_sync_point (display->test_driver,
++                          XDG_TOPLEVEL_SUSPENDED_COMMAND_HIDE_SCREEN_SHIELD,
++                          surface->wl_surface);
++  wait_for_no_state (surface, XDG_TOPLEVEL_STATE_SUSPENDED);
++}
++
+ int
+ main (int    argc,
+       char **argv)
+@@ -206,6 +232,7 @@ main (int    argc,
+   test_workspace_changes (display);
+   test_obstructed (display);
+   test_obstructed_clone (display);
++  test_screen_shield (display);
+ 
+   return EXIT_SUCCESS;
+ }
+--- a/src/tests/wayland-unit-tests.c
++++ b/src/tests/wayland-unit-tests.c
+@@ -28,6 +28,7 @@
+ #include "core/meta-workspace-manager-private.h"
+ #include "core/window-private.h"
+ #include "meta-test/meta-context-test.h"
++#include "meta/compositor-mutter.h"
+ #include "meta/meta-later.h"
+ #include "meta/meta-workspace-manager.h"
+ #include "tests/meta-test-utils.h"
+@@ -875,6 +876,8 @@ enum
+   XDG_TOPLEVEL_SUSPENDED_COMMAND_PREV_WORKSPACE = 1,
+   XDG_TOPLEVEL_SUSPENDED_COMMAND_ACTIVATE_WINDOW = 2,
+   XDG_TOPLEVEL_SUSPENDED_COMMAND_CLONE = 3,
++  XDG_TOPLEVEL_SUSPENDED_COMMAND_SHOW_SCREEN_SHIELD = 4,
++  XDG_TOPLEVEL_SUSPENDED_COMMAND_HIDE_SCREEN_SHIELD = 5,
+ };
+ 
+ static void
+@@ -937,6 +940,32 @@ on_toplevel_suspended_sync_point (MetaWa
+ 
+         break;
+       }
++    case XDG_TOPLEVEL_SUSPENDED_COMMAND_SHOW_SCREEN_SHIELD:
++      {
++        ClutterActor *window_group;
++        ClutterActor *top_window_group;
++
++        /* Imitate what the screen shield does to the window groups. */
++        window_group = meta_get_window_group_for_display (display);
++        top_window_group = meta_get_top_window_group_for_display (display);
++
++        clutter_actor_hide (window_group);
++        clutter_actor_hide (top_window_group);
++        break;
++      }
++    case XDG_TOPLEVEL_SUSPENDED_COMMAND_HIDE_SCREEN_SHIELD:
++      {
++        ClutterActor *window_group;
++        ClutterActor *top_window_group;
++
++        /* Imitate what the screen shield does to the window groups. */
++        window_group = meta_get_window_group_for_display (display);
++        top_window_group = meta_get_top_window_group_for_display (display);
++
++        clutter_actor_show (window_group);
++        clutter_actor_show (top_window_group);
++        break;
++      }
+     }
+ }
+ 

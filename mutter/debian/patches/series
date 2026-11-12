@@ -68,3 +68,4 @@ backends-native-Increase-fallback-mode-refresh-rate-toler.patch
 ubuntu/backends-native-Add-measured-KMS-submission-time-to-deadl.patch
 window-actor-Track-state-affecting-suspend-inhibation-ex.patch
 window-actor-Handle-visibility-condition-for-suspending-w.patch
+tests-wayland-toplevel-suspend-Add-test-for-suspending-on.patch
