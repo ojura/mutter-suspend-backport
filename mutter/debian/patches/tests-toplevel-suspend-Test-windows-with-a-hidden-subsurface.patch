@@ -1,0 +1,125 @@
+From: =?UTF-8?q?Juraj_Or=C5=A1uli=C4=87?= <juraj.orsulic@fer.hr>
+Date: Thu, 12 Nov 2026 01:20:00 +0100
+Subject: tests/toplevel-suspend: Test windows with a hidden subsurface
+
+The first case covers a window that has a subsurface without a buffer
+and expects it to be suspended, then uncovers it and expects it to be
+active again. Without the window actor changes from merge request 4588
+it is never suspended, because the actor of the hidden subsurface keeps
+a suspend inhibitor.
+
+The second case adds such a subsurface to a shown window with a parent
+commit that has no buffer and no damage, and expects the window to stay
+active for 5 seconds, longer than the 3 seconds after which a hidden
+window is suspended.
+
+Forwarded: no
+---
+ src/tests/wayland-test-clients/xdg-toplevel-suspended.c |   89 ++++++++++++++++
+ 1 file changed, 89 insertions(+)
+
+--- a/src/tests/wayland-test-clients/xdg-toplevel-suspended.c
++++ b/src/tests/wayland-test-clients/xdg-toplevel-suspended.c
+@@ -216,6 +216,93 @@ test_screen_shield (WaylandDisplay *disp
+   wait_for_no_state (surface, XDG_TOPLEVEL_STATE_SUSPENDED);
+ }
+ 
++static void
++test_obstructed_hidden_subsurface (WaylandDisplay *display)
++{
++  g_autoptr (WaylandSurface) surface = NULL;
++  g_autoptr (WaylandSurface) cover_surface = NULL;
++  struct wl_surface *child_surface;
++  struct wl_subsurface *subsurface;
++
++  g_debug ("Testing suspended state when obstructed with a hidden subsurface");
++
++  surface = wayland_surface_new (display, __func__, 100, 100, 0xffffffff);
++
++  /* The subsurface never gets a buffer, so it stays hidden. */
++  child_surface = wl_compositor_create_surface (display->compositor);
++  subsurface = wl_subcompositor_get_subsurface (display->subcompositor,
++                                                child_surface,
++                                                surface->wl_surface);
++  wl_surface_commit (child_surface);
++  wl_surface_commit (surface->wl_surface);
++
++  wait_for_window_shown (display, surface->wl_surface);
++  g_assert_false (wayland_surface_has_state (surface,
++                                             XDG_TOPLEVEL_STATE_SUSPENDED));
++
++  cover_surface = wayland_surface_new (display, "obstruction",
++                                       100, 100, 0xffffffff);
++  xdg_toplevel_set_maximized (cover_surface->xdg_toplevel);
++  wl_surface_commit (cover_surface->wl_surface);
++
++  wait_for_window_shown (display, cover_surface->wl_surface);
++  test_driver_sync_point (display->test_driver,
++                          XDG_TOPLEVEL_SUSPENDED_COMMAND_ACTIVATE_WINDOW,
++                          cover_surface->wl_surface);
++
++  wait_for_state (surface, XDG_TOPLEVEL_STATE_SUSPENDED);
++
++  g_clear_object (&cover_surface);
++
++  wait_for_no_state (surface, XDG_TOPLEVEL_STATE_SUSPENDED);
++
++  wl_subsurface_destroy (subsurface);
++  wl_surface_destroy (child_surface);
++}
++
++static void
++test_hidden_subsurface_added_when_shown (WaylandDisplay *display)
++{
++  g_autoptr (WaylandSurface) surface = NULL;
++  struct wl_surface *child_surface;
++  struct wl_subsurface *subsurface;
++  int64_t end_time_us;
++
++  g_debug ("Testing suspended state when adding a hidden subsurface to a "
++           "shown window");
++
++  surface = wayland_surface_new (display, __func__, 100, 100, 0xffffffff);
++  wl_surface_commit (surface->wl_surface);
++
++  wait_for_window_shown (display, surface->wl_surface);
++  g_assert_false (wayland_surface_has_state (surface,
++                                             XDG_TOPLEVEL_STATE_SUSPENDED));
++
++  /* The parent commit only adds the subsurface: it has no new buffer and
++   * no damage, so nothing else makes the compositor repaint. */
++  child_surface = wl_compositor_create_surface (display->compositor);
++  subsurface = wl_subcompositor_get_subsurface (display->subcompositor,
++                                                child_surface,
++                                                surface->wl_surface);
++  wl_surface_commit (child_surface);
++  wl_surface_commit (surface->wl_surface);
++
++  /* The window stays visible, so it must stay out of the suspended state
++   * for longer than the 3 seconds after which a hidden window is
++   * suspended. */
++  end_time_us = g_get_monotonic_time () + 5 * G_USEC_PER_SEC;
++  while (g_get_monotonic_time () < end_time_us)
++    {
++      wl_display_roundtrip (display->display);
++      g_assert_false (wayland_surface_has_state (surface,
++                                                 XDG_TOPLEVEL_STATE_SUSPENDED));
++      g_usleep (100 * 1000);
++    }
++
++  wl_subsurface_destroy (subsurface);
++  wl_surface_destroy (child_surface);
++}
++
+ int
+ main (int    argc,
+       char **argv)
+@@ -233,6 +320,8 @@ main (int    argc,
+   test_obstructed (display);
+   test_obstructed_clone (display);
+   test_screen_shield (display);
++  test_obstructed_hidden_subsurface (display);
++  test_hidden_subsurface_added_when_shown (display);
+ 
+   return EXIT_SUCCESS;
+ }
