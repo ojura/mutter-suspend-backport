@@ -1,0 +1,119 @@
+Headless gnome-shell 46.0-0ubuntu6~24.04.17, final run (out/tests/run2), stock libmutter versus the one built from commit 1c57406.
+Each line gives the state at the end of the phase and the changes during it, with times from the start of the phase.
+
+covered-hidden-subsurface
+  stock shell mapped /usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  patched shell mapped /home/juraj/src/mutter-suspend-backport/out/46.2-1ubuntu0.24.04.18+local1-1c57406/root/usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  same    shown / target: stock active (no change); patched active (no change)
+  DIFFERS covered by a fullscreen window / target: stock active (no change); patched suspended (suspended at +2.46 s)
+  same    uncovered / target: stock active (no change); patched active (active at +0.00 s)
+
+covered-plain
+  stock shell mapped /usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  patched shell mapped /home/juraj/src/mutter-suspend-backport/out/46.2-1ubuntu0.24.04.18+local1-1c57406/root/usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  same    shown / target: stock active (no change); patched active (no change)
+  same    covered by a fullscreen window / target: stock suspended (suspended at +2.34 s); patched suspended (suspended at +1.83 s)
+  same    uncovered / target: stock active (active at +0.00 s); patched active (active at +0.00 s)
+
+exact-cover
+  stock shell mapped /usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  patched shell mapped /home/juraj/src/mutter-suspend-backport/out/46.2-1ubuntu0.24.04.18+local1-1c57406/root/usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  same    covered by a window of exactly the same size and position / target: stock active (no change); patched active (no change)
+  same    covered by a window 2 px larger on each side / target: stock suspended (suspended at +2.91 s); patched suspended (suspended at +3.73 s)
+
+lock-screen
+  stock shell mapped /usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  patched shell mapped /home/juraj/src/mutter-suspend-backport/out/46.2-1ubuntu0.24.04.18+local1-1c57406/root/usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  same    shown / plain: stock active (no change); patched active (no change)
+  same    shown / hidden-sub: stock active (no change); patched active (no change)
+  DIFFERS screen locked / plain: stock active (no change); patched suspended (suspended at +3.19 s)
+  DIFFERS screen locked / hidden-sub: stock active (no change); patched suspended (suspended at +3.19 s)
+  same    unlocked / plain: stock active (no change); patched active (no change)
+  same    unlocked / hidden-sub: stock active (no change); patched active (no change)
+
+mapped-subsurface
+  stock shell mapped /usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  patched shell mapped /home/juraj/src/mutter-suspend-backport/out/46.2-1ubuntu0.24.04.18+local1-1c57406/root/usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  same    shown / outside: stock active (no change); patched active (no change)
+  same    shown / inside: stock active (no change); patched active (no change)
+  same    main surfaces covered, outside subsurface visible / outside: stock active (no change); patched active (no change)
+  same    main surfaces covered, outside subsurface visible / inside: stock suspended (suspended at +2.95 s); patched suspended (suspended at +3.04 s)
+  same    covered by a fullscreen window / outside: stock suspended (suspended at +1.84 s); patched suspended (suspended at +1.93 s)
+  same    covered by a fullscreen window / inside: stock suspended (no change); patched suspended (no change)
+  same    uncovered / outside: stock active (active at +0.01 s); patched active (active at +0.01 s)
+  same    uncovered / inside: stock active (active at +0.01 s); patched active (active at +0.01 s)
+
+minimized
+  stock shell mapped /usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  patched shell mapped /home/juraj/src/mutter-suspend-backport/out/46.2-1ubuntu0.24.04.18+local1-1c57406/root/usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  same    shown / plain: stock active (no change); patched active (no change)
+  same    shown / hidden-sub: stock active (no change); patched active (no change)
+  same    minimized / plain: stock suspended (suspended at +3.26 s); patched suspended (suspended at +3.55 s)
+  same    minimized / hidden-sub: stock suspended (suspended at +3.26 s); patched suspended (suspended at +3.55 s)
+  DIFFERS overview shown, minimized windows visible as clones / plain: stock suspended (no change); patched active (no change)
+  DIFFERS overview shown, minimized windows visible as clones / hidden-sub: stock suspended (no change); patched active (no change)
+  same    overview hidden / plain: stock suspended (no change); patched suspended (suspended at +3.51 s)
+  same    overview hidden / hidden-sub: stock suspended (no change); patched suspended (suspended at +3.51 s)
+  same    unminimized / plain: stock active (no change); patched active (no change)
+  same    unminimized / hidden-sub: stock active (no change); patched active (active at +0.00 s)
+
+other-workspace
+  stock shell mapped /usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  patched shell mapped /home/juraj/src/mutter-suspend-backport/out/46.2-1ubuntu0.24.04.18+local1-1c57406/root/usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  same    shown / plain: stock active (no change); patched active (no change)
+  same    shown / hidden-sub: stock active (no change); patched active (no change)
+  same    moved to another workspace / plain: stock suspended (suspended at +3.42 s); patched suspended (suspended at +2.94 s)
+  same    moved to another workspace / hidden-sub: stock suspended (suspended at +3.42 s); patched suspended (suspended at +2.94 s)
+  DIFFERS overview shown, windows of the other workspace visible as clones / plain: stock suspended (no change); patched active (no change)
+  DIFFERS overview shown, windows of the other workspace visible as clones / hidden-sub: stock suspended (no change); patched active (no change)
+  same    overview hidden / plain: stock suspended (no change); patched suspended (suspended at +2.86 s)
+  same    overview hidden / hidden-sub: stock suspended (no change); patched suspended (suspended at +2.86 s)
+
+overview
+  stock shell mapped /usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  patched shell mapped /home/juraj/src/mutter-suspend-backport/out/46.2-1ubuntu0.24.04.18+local1-1c57406/root/usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  same    shown / plain: stock active (no change); patched active (no change)
+  same    shown / hidden-sub: stock active (no change); patched active (no change)
+  same    covered by a fullscreen window / plain: stock suspended (suspended at +1.74 s); patched suspended (suspended at +1.86 s)
+  DIFFERS covered by a fullscreen window / hidden-sub: stock active (no change); patched suspended (suspended at +1.86 s)
+  same    overview shown, windows visible as clones / plain: stock active (no change); patched active (no change)
+  same    overview shown, windows visible as clones / hidden-sub: stock active (no change); patched active (no change)
+  same    overview hidden, covered again / plain: stock suspended (suspended at +3.69 s); patched suspended (suspended at +2.81 s)
+  DIFFERS overview hidden, covered again / hidden-sub: stock active (no change); patched suspended (suspended at +2.81 s)
+
+partly-covered
+  stock shell mapped /usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  patched shell mapped /home/juraj/src/mutter-suspend-backport/out/46.2-1ubuntu0.24.04.18+local1-1c57406/root/usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  same    shown / plain: stock active (no change); patched active (no change)
+  same    shown / hidden-sub: stock active (no change); patched active (no change)
+  same    left half of each window covered / plain: stock active (no change); patched active (no change)
+  same    left half of each window covered / hidden-sub: stock active (no change); patched active (no change)
+  same    covered by a fullscreen window / plain: stock suspended (suspended at +2.42 s); patched suspended (suspended at +2.39 s)
+  DIFFERS covered by a fullscreen window / hidden-sub: stock active (no change); patched suspended (suspended at +2.39 s)
+  same    left half covered again / plain: stock active (active at +0.00 s); patched active (active at +0.00 s)
+  same    left half covered again / hidden-sub: stock active (no change); patched active (active at +0.00 s)
+
+subsurface-changes
+  stock shell mapped /usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  patched shell mapped /home/juraj/src/mutter-suspend-backport/out/46.2-1ubuntu0.24.04.18+local1-1c57406/root/usr/lib/x86_64-linux-gnu/libmutter-14.so.0.0.0
+  same    shown / target: stock active (no change); patched active (no change)
+  same    hidden subsurface added, nothing else redrawn / target: stock active (no change); patched active (no change)
+  same    subsurface mapped / target: stock active (no change); patched active (no change)
+  same    subsurface covered, rest of the window visible / target: stock active (no change); patched active (no change)
+  same    covered subsurface unmapped / target: stock active (no change); patched active (no change)
+  DIFFERS covered by a fullscreen window with a hidden subsurface / target: stock active (no change); patched suspended (suspended at +1.77 s)
+  same    covered, subsurface mapped / target: stock suspended (suspended at +2.58 s); patched suspended (suspended at +2.56 s)
+  DIFFERS covered, subsurface unmapped again / target: stock active (no change); patched suspended (suspended at +3.35 s)
+  same    uncovered / target: stock active (no change); patched active (active at +0.00 s)
+  same    subsurface destroyed / target: stock active (no change); patched active (no change)
+
+mutter test suite in the built tree (out/suite-control/*.log; Ubuntu's own build log for .18 has the same monitor-unit failure):
+  patched: 1/1 mutter:core+mutter/wayland / wayland-unit OK              24.68s
+  patched: 1/1 mutter:core+mutter/stacking / suspend-state-timeout OK               5.34s
+  patched: 1/1 mutter:core+mutter/backend / monitor-unit FAIL            11.21s   (exit status 250 or signal 122 SIGinvalid)
+  stock: 1/1 mutter:core+mutter/wayland / wayland-unit TIMEOUT        360.16s   killed by signal 15 SIGTERM
+  stock: 1/1 mutter:core+mutter/stacking / suspend-state-timeout OK               5.43s
+  stock: 1/1 mutter:core+mutter/backend / monitor-unit FAIL            13.09s   (exit status 250 or signal 122 SIGinvalid)
+  stock-without-shield-case: 1/1 mutter:core+mutter/wayland / wayland-unit TIMEOUT        360.16s   killed by signal 15 SIGTERM
+  stock-without-shield-case: 1/1 mutter:core+mutter/stacking / suspend-state-timeout OK               5.62s
+  stock-without-shield-case: 1/1 mutter:core+mutter/backend / monitor-unit FAIL            18.01s   (exit status 250 or signal 122 SIGinvalid)
