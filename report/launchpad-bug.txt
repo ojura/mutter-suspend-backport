@@ -55,7 +55,7 @@ Only Wayland clients that bind xdg_wm_base version 6 or later receive the suspen
 
 [ Other Info ]
 
-The package build with the debdiff and Ubuntu's own amd64 build of 46.2-1ubuntu0.24.04.18 both have one failing test, /backends/monitor/custom/second-rotated-tiled-config in monitor-unit, with the same assertion; debian/rules ignores test failures, and the test does not involve the changed code.
+The package build with the debdiff and Ubuntu's own amd64 build of 46.2-1ubuntu0.24.04.18 both have one failing test, /backends/monitor/custom/second-rotated-tiled-config in monitor-unit, with the same assertion; debian/rules ignores test failures, and the test fails the same way without these patches.
 
 On 46.2, with and without the patches, a window covered by another window of exactly the same size and position is not counted as obscured and is not suspended. The covers in these tests therefore reach at least 2 pixels past the covered window.
 
