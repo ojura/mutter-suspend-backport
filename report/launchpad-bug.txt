@@ -10,7 +10,7 @@ mutter 46.2 in Ubuntu 24.04 never gives the xdg_toplevel "suspended" state to a 
 
 mutter keeps a window active while any of its surface actors is not obscured: meta_window_actor_add_surface_actor() in src/compositor/meta-window-actor.c takes one suspend inhibitor for each surface actor that is not obscured, and update_suspend_state() in src/core/window.c keeps a window that is not hidden active while it holds an inhibitor. Whether a surface actor is obscured is decided by the culling pass before painting, and that pass gives an actor that is not visible no unobscured region, which counts as not obscured (cull_out_children_common() in src/compositor/meta-cullable.c, set_unobscured_region() in src/compositor/meta-surface-actor.c). The actor of a hidden subsurface is not visible, so it holds an inhibitor for as long as it exists.
 
-Google Chrome keeps hidden subsurfaces in its windows. When a tab is being captured, a covered Chrome window that is not suspended keeps drawing and requests a frame callback with every frame. mutter holds those callbacks while the window is covered and sends all of them when the window is shown again. At about 35 frames per second, in under four minutes the burst is larger than the send buffer of the Wayland socket, gnome-shell disconnects Chrome, and Chrome exits ("Fatal Wayland communication error"). The Chrome side of this is https://issues.chromium.org/issues/584386512. A Chrome window without hidden subsurfaces, which mutter 46.2 does suspend, stops committing frames 3 seconds after it is covered.
+Google Chrome windows can have hidden subsurfaces; on the affected machine each Chrome window had two. When a tab is being captured, a covered Chrome window that is not suspended keeps drawing and requests a frame callback with every frame. mutter holds those callbacks while the window is covered and sends all of them when the window is shown again. At about 35 frames per second, in under four minutes the burst is larger than the send buffer of the Wayland socket, gnome-shell disconnects Chrome, and Chrome exits ("Fatal Wayland communication error"). The Chrome side of this is https://issues.chromium.org/issues/584386512. A Chrome window without hidden subsurfaces, which mutter 46.2 does suspend, stops committing frames 3 seconds after it is covered.
 
 [ Fix ]
 
@@ -20,7 +20,7 @@ b3fad292b074ad573a73999fa89d55b73a8e0f32 window-actor: Track state affecting sus
 9c97332606dc61797deda5f0426524f6d9a956f6 window-actor: Handle visibility condition for suspending window
 79a73f919c579f1a5b67402f306311048bd98126 tests/wayland/toplevel-suspend: Add test for suspending on screen shield
 
-With these, the window actor counts its mapped surface actors, its obscured surface actors and its mapped clones. The window counts as visible while one of its clones is mapped, or while the window actor itself is mapped and not every mapped surface actor is obscured. A hidden subsurface is not mapped, so it no longer keeps the window active. The merge request was written to suspend windows while the screen is locked and does not refer to an issue; I did not find an upstream issue or a Launchpad bug about the hidden subsurface case. Ubuntu 26.04 (mutter 50.1) has the fix, and Ubuntu 22.04 (mutter 42.9) predates the suspended state, which mutter 45 introduced, so 24.04 is the supported release that needs it.
+With these, the window actor counts its mapped surface actors, its obscured surface actors and its mapped clones. The window counts as visible while one of its clones is mapped, or while the window actor itself is mapped and not every mapped surface actor is obscured. A hidden subsurface is not mapped, so it no longer keeps the window active. The merge request was written to suspend windows while the screen is locked and does not refer to an issue; I did not find an upstream issue or a Launchpad bug about the hidden subsurface case. Ubuntu 26.04 (mutter 50.1) and 26.10 (mutter 51.0) have the fix, and Ubuntu 22.04 (mutter 42.9) predates the suspended state, which mutter 45 introduced, so 24.04 is the supported release that needs it.
 
 The two window-actor commits apply to 46.2-1ubuntu0.24.04.18 with line offsets only. The test commit needed two adjustments for 46.2, which its patch header describes. The attached debdiff adds the three commits as patches, and a fourth patch, not from upstream, with two cases for hidden subsurfaces in the /wayland/toplevel/suspended test.
 
@@ -44,7 +44,7 @@ I also ran ten scripted cases with 66 checks, each the state of a window at the 
 
 [ Where problems could occur ]
 
-The patches change when mutter gives windows the suspended state, and clients use that state to stop work: Chrome stops committing frames, and according to the merge request discussion GNOME Snapshot turns its camera off when it is not recording. A mistake would show as a window that stops updating while it is visible, or as one that keeps working while nobody can see it. In the cases above where a window has to stay active, the results did not change.
+The patches change when mutter gives windows the suspended state, and clients use that state to stop work; Chrome, for example, stops committing frames. A mistake would show as a window that stops updating while it is visible, or as one that keeps working while nobody can see it. In the cases above where a window has to stay active, the results did not change.
 
 Apart from the hidden subsurface case, the backport changes two situations, as mutter 49 does:
 
@@ -57,7 +57,7 @@ Only Wayland clients that bind xdg_wm_base version 6 or later receive the suspen
 
 The package build with the debdiff and Ubuntu's own amd64 build of 46.2-1ubuntu0.24.04.18 both have one failing test, /backends/monitor/custom/second-rotated-tiled-config in monitor-unit, with the same assertion; debian/rules ignores test failures, and the test fails the same way without these patches.
 
-On 46.2, with and without the patches, a window covered by another window of exactly the same size and position is not counted as obscured and is not suspended. The covers in these tests therefore reach at least 2 pixels past the covered window.
+In the headless shell used for these tests, with and without the patches, a window covered by another window of exactly the same size and position was not suspended, and with a cover 2 pixels larger on each side it was. The covers in the tests therefore reach at least 2 pixels past the covered window.
 
 The fourth patch in the debdiff is mine and not from upstream. It only adds test cases and can be dropped.
 
