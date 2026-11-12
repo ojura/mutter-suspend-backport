@@ -1,0 +1,49 @@
+From: =?UTF-8?q?Jonas=20=C3=85dahl?= <jadahl@gmail.com>
+Date: Sat, 16 Aug 2025 22:03:25 +0200
+Subject: window-actor: Handle visibility condition for suspending
+ window
+
+We were looking at the MetaWindow::hidden state when deciding whether to
+let a window enter the suspended state, but we can replace this with
+handling effective visibility in the window actor. This has the benefit
+of also covering the case where the screen shield is showing in GNOME
+Shell, as the window actor itself will effectively be unmapped while the
+screen shield is showing.
+
+Part-of: <https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/4588>
+Origin: upstream, https://gitlab.gnome.org/GNOME/mutter/-/commit/9c97332606dc61797deda5f0426524f6d9a956f6
+Applied-Upstream: 49.rc
+---
+ src/compositor/meta-window-actor.c |    8 +++++++-
+ src/core/window.c                  |    3 +--
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+--- a/src/compositor/meta-window-actor.c
++++ b/src/compositor/meta-window-actor.c
+@@ -155,7 +155,13 @@ update_is_effectively_visible (MetaWindo
+       goto out;
+     }
+ 
+-  is_visible = priv->n_mapped_surfaces > priv->n_obscured_surfaces;
++  if (priv->n_mapped_surfaces == priv->n_obscured_surfaces)
++    {
++      is_visible = FALSE;
++      goto out;
++    }
++
++  is_visible = clutter_actor_is_mapped (CLUTTER_ACTOR (window_actor));
+ 
+ out:
+   if (priv->is_effectively_visible == is_visible)
+--- a/src/core/window.c
++++ b/src/core/window.c
+@@ -2166,8 +2166,7 @@ update_suspend_state (MetaWindow *window
+   if (window->unmanaging)
+     return;
+ 
+-  if (!window->hidden &&
+-      priv->suspend_state_inhibitors > 0)
++  if (priv->suspend_state_inhibitors > 0)
+     {
+       priv->suspend_state = META_WINDOW_SUSPEND_STATE_ACTIVE;
+       g_object_notify_by_pspec (G_OBJECT (window), obj_props[PROP_SUSPEND_STATE]);
