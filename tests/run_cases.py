@@ -61,6 +61,9 @@ class Run:
     def start_shell(self):
         env = os.environ.copy()
         env.pop('LD_LIBRARY_PATH', None)
+        # The session bus of the test shell activates gvfsd, which would mount
+        # its FUSE file system in the scratch runtime directory.
+        env['GVFS_DISABLE_FUSE'] = '1'
         if self.library_set != 'stock':
             root = Path(self.library_set.split('=', 1)[1]).resolve()
             if not (root / LIBDIR / 'libmutter-14.so.0').exists():
@@ -191,8 +194,25 @@ class Run:
         for name in ('shell.log',):
             if (self.scratch / name).exists():
                 shutil.copy(self.scratch / name, self.results / name)
-        shutil.rmtree(self.scratch)
+        self.remove_scratch()
         self.log.close()
+
+    def mounts_in_scratch(self):
+        prefix = str(self.scratch) + '/'
+        return [line.split()[1] for line in Path('/proc/mounts').read_text().splitlines()
+                if line.split()[1].startswith(prefix)]
+
+    def remove_scratch(self):
+        # FUSE file systems of the test session (the document portal, gvfs)
+        # can stay mounted in the runtime directory for a moment after the
+        # session bus ends; their daemons then exit.
+        deadline = time.time() + 15
+        while self.mounts_in_scratch() and time.time() < deadline:
+            time.sleep(0.5)
+        for mount in self.mounts_in_scratch():
+            self.note(f'unmounting {mount}, still mounted 15 s after the shell stopped')
+            subprocess.run(['fusermount3', '-u', '-z', mount], check=False)
+        shutil.rmtree(self.scratch)
 
 
 def client_states(path):
@@ -455,7 +475,11 @@ def main():
             run.note(f'case aborted: {e!r}')
             all_lines.append(f'ERROR {run.label} {name}: {e!r}')
         finally:
-            run.stop()
+            try:
+                run.stop()
+            except Exception as e:
+                print(f'[{run.label} {name}] cleanup failed: {e!r}', flush=True)
+                all_lines.append(f'ERROR {run.label} {name}: cleanup failed: {e!r}')
         rows = evaluate(run)
         lines = format_rows(run.label, rows)
         (run.results / 'summary.json').write_text(json.dumps(rows, indent=1) + '\n')
