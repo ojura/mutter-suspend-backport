@@ -1,3 +1,19 @@
+mutter (46.2-1ubuntu0.24.04.18+local1) noble; urgency=medium
+
+  * Suspend a covered window that has a hidden subsurface. mutter kept a
+    window active while any of its surface actors was not obscured, and
+    it never marks the actor of a hidden subsurface as obscured, so such a
+    window was never suspended. Backport the counting of mapped and
+    obscured surfaces from mutter 49 (merge request 4588):
+    - d/p/window-actor-Track-state-affecting-suspend-inhibation-ex.patch
+    - d/p/window-actor-Handle-visibility-condition-for-suspending-w.patch
+    - d/p/tests-wayland-toplevel-suspend-Add-test-for-suspending-on.patch
+  * d/p/tests-toplevel-suspend-Test-windows-with-a-hidden-subsurface.patch:
+    test that a covered window with a hidden subsurface is suspended, and
+    that a shown window stays active after it adds a hidden subsurface.
+
+ -- Juraj Oršulić <juraj.orsulic@fer.hr>  Thu, 12 Nov 2026 01:15:01 +0100
+
 mutter (46.2-1ubuntu0.24.04.18) noble; urgency=medium
 
   [ Thomas Chen ]
