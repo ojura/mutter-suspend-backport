@@ -44,10 +44,15 @@ DOCKER_AC_LOG_DIR=$ac_logs "$guard" run --rm --pull never --init \
 echo "container exit status $status"
 
 if [ "$status" = 0 ]; then
-  cp "$orig" "$work/"
-  (cd "$work" && dpkg-source -b mutter) >> "$out/build.log" 2>&1
-  cp "$work"/*.deb "$work"/*.ddeb "$work"/*.buildinfo "$work"/*.changes \
-     "$work"/*.dsc "$work"/*.debian.tar.xz "$out/" 2>/dev/null || true
+  cp "$work"/*.deb "$work"/*.ddeb "$work"/*.buildinfo "$work"/*.changes "$out/"
+  # The source package comes from a clean export of the commit, because the
+  # built tree holds the build products.
+  source=$(mktemp -d /tmp/mutter-source.XXXXXX)
+  git -C "$repo" archive "$commit" mutter | tar -x -C "$source"
+  cp "$orig" "$source/"
+  (cd "$source" && dpkg-source -b mutter) >> "$out/build.log" 2>&1
+  cp "$source"/*.dsc "$source"/*.debian.tar.xz "$out/"
+  rm -rf "$source"
 fi
 echo "results in $out"
 exit "$status"

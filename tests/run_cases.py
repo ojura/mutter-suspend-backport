@@ -5,7 +5,8 @@ usage: run_cases.py <library set> <results dir> [case ...]
 
 <library set> is "stock" for the mutter libraries installed on the host, or
 "patched=<dir>", where <dir> holds the extracted libmutter-14-0 package of a
-build; its library directories go into LD_LIBRARY_PATH. Each case starts a
+build; the directory of its libmutter-14.so.0 goes into LD_LIBRARY_PATH, and
+the clutter, cogl and mtk libraries stay the installed ones. Each case starts a
 shell with the test control extension, starts test clients, and holds a
 series of phases. For each window and phase it records the expected state
 at the end of the phase for the stock and the patched libraries, and the
@@ -64,7 +65,11 @@ class Run:
             root = Path(self.library_set.split('=', 1)[1]).resolve()
             if not (root / LIBDIR / 'libmutter-14.so.0').exists():
                 raise SystemExit(f'{root / LIBDIR}/libmutter-14.so.0 does not exist')
-            env['LD_LIBRARY_PATH'] = f'{root / LIBDIR}:{root / LIBDIR}/mutter-14'
+            # Only libmutter-14.so.0 comes from the build. GObject introspection
+            # opens the clutter, cogl and mtk libraries by their full path in
+            # /usr/lib/x86_64-linux-gnu/mutter-14, so taking those from the build
+            # as well would load two copies and register every Clutter type twice.
+            env['LD_LIBRARY_PATH'] = str(root / LIBDIR)
         self.note(f'starting the shell, LD_LIBRARY_PATH={env.get("LD_LIBRARY_PATH", "")}')
         self.shell = subprocess.Popen(
             [str(HERE / 'headless_shell.sh'), str(self.scratch), str(EXTENSION)],
