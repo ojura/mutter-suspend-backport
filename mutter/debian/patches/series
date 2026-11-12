@@ -66,3 +66,4 @@ window-Replace-winsys_id-for-monitor-matching.patch
 output-kms-Filter-fallback-modes-by-panel-supported-refre.patch
 backends-native-Increase-fallback-mode-refresh-rate-toler.patch
 ubuntu/backends-native-Add-measured-KMS-submission-time-to-deadl.patch
+window-actor-Track-state-affecting-suspend-inhibation-ex.patch
