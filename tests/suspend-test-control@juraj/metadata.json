@@ -1,6 +1,12 @@
 {
   "uuid": "suspend-test-control@juraj",
   "name": "Suspend test control",
-  "description": "Test helper for the isolated headless shell only: keeps windows titled cover above the others and lets a test driver move, minimize and activate windows, open the overview and lock the screen over D-Bus.",
-  "shell-version": ["46"]
+  "description": "Test helper for the isolated headless shell only: keeps windows titled cover above the others and lets a test driver move, minimize and activate windows, open the overview and lock the screen over D-Bus. It stays enabled on the lock screen, so that the driver can unlock.",
+  "shell-version": [
+    "46"
+  ],
+  "session-modes": [
+    "user",
+    "unlock-dialog"
+  ]
 }

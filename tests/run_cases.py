@@ -276,10 +276,12 @@ def case_partly_covered(r):
     r.call('Move', 'hidden-sub', 700, 100)
     both_active = {'plain': (ACTIVE, ACTIVE), 'hidden-sub': (ACTIVE, ACTIVE)}
     r.phase('shown', 6, both_active)
-    r.client('cover-a', '--size', '240x320')
-    r.call('Move', 'cover-a', 100, 100)
-    r.client('cover-b', '--size', '240x320')
-    r.call('Move', 'cover-b', 700, 100)
+    # Each cover reaches 2 px past the window's left, top and bottom edges
+    # and ends in the middle of the window.
+    r.client('cover-a', '--size', '242x324')
+    r.call('Move', 'cover-a', 98, 98)
+    r.client('cover-b', '--size', '242x324')
+    r.call('Move', 'cover-b', 698, 98)
     r.phase('left half of each window covered', 12, both_active)
     r.client('cover', '--fullscreen')
     r.phase('covered by a fullscreen window', 10,
@@ -297,10 +299,12 @@ def case_mapped_subsurface(r):
     r.call('Move', 'inside', 100, 450)
     both_active = {'outside': (ACTIVE, ACTIVE), 'inside': (ACTIVE, ACTIVE)}
     r.phase('shown', 6, both_active)
-    r.client('cover-main-1', '--size', '480x320')
-    r.call('Move', 'cover-main-1', 100, 100)
-    r.client('cover-main-2', '--size', '480x320')
-    r.call('Move', 'cover-main-2', 100, 450)
+    # The covers reach 2 px past each main surface; cover-main-1 ends at
+    # x=582 and the outside subsurface starts at x=600.
+    r.client('cover-main-1', '--size', '484x324')
+    r.call('Move', 'cover-main-1', 98, 98)
+    r.client('cover-main-2', '--size', '484x324')
+    r.call('Move', 'cover-main-2', 98, 448)
     r.phase('main surfaces covered, outside subsurface visible', 12,
             {'outside': (ACTIVE, ACTIVE), 'inside': (SUSPENDED, SUSPENDED)})
     r.client('cover', '--fullscreen')
@@ -309,6 +313,23 @@ def case_mapped_subsurface(r):
     for title in ('cover', 'cover-main-1', 'cover-main-2'):
         r.stop_client(title)
     r.phase('uncovered', 8, both_active)
+
+
+def case_exact_cover(r):
+    # mutter 46.2 does not count a window as obscured when another window of
+    # exactly its size and position covers it; a cover 2 px larger on each
+    # side does. The other cases therefore use covers with a margin. This
+    # case records that the backport leaves that behaviour as it is.
+    r.client('target')
+    r.call('Move', 'target', 100, 100)
+    r.client('cover-exact', '--size', '480x320')
+    r.call('Move', 'cover-exact', 100, 100)
+    r.phase('covered by a window of exactly the same size and position', 10,
+            {'target': (ACTIVE, ACTIVE)})
+    r.client('cover-margin', '--size', '484x324')
+    r.call('Move', 'cover-margin', 98, 98)
+    r.phase('covered by a window 2 px larger on each side', 10,
+            {'target': (SUSPENDED, SUSPENDED)})
 
 
 def case_overview(r):
@@ -408,6 +429,7 @@ CASES = {
     'covered-hidden-subsurface': case_covered_hidden_subsurface,
     'partly-covered': case_partly_covered,
     'mapped-subsurface': case_mapped_subsurface,
+    'exact-cover': case_exact_cover,
     'overview': case_overview,
     'minimized': case_minimized,
     'other-workspace': case_other_workspace,
