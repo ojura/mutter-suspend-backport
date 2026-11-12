@@ -377,8 +377,13 @@ def case_minimized(r):
     r.phase('shown', 6, both_active)
     r.call('Minimize', 'plain')
     r.call('Minimize', 'hidden-sub')
-    r.phase('minimized', 10, {'plain': (SUSPENDED, SUSPENDED),
-                              'hidden-sub': (SUSPENDED, SUSPENDED)})
+    minimized = {'plain': (SUSPENDED, SUSPENDED), 'hidden-sub': (SUSPENDED, SUSPENDED)}
+    r.phase('minimized', 10, minimized)
+    r.call('ShowOverview')
+    r.phase('overview shown, minimized windows visible as clones', 10,
+            {'plain': (SUSPENDED, ACTIVE), 'hidden-sub': (SUSPENDED, ACTIVE)}, change=True)
+    r.call('HideOverview')
+    r.phase('overview hidden', 10, minimized)
     r.call('Unminimize', 'plain')
     r.call('Unminimize', 'hidden-sub')
     r.phase('unminimized', 8, both_active)
