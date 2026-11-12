@@ -2,12 +2,12 @@
 
 The title and the text are in `report/launchpad-bug.txt`. The browser steps
 use the cdp-daemon (`http://127.0.0.1:7799`) through
-`~/.local/state/chrome-wayland-catch/bin/cdp_page.py` (open, nav, eval,
+`~/src/chrome-wayland-catch/bin/cdp_page.py` (open, nav, eval,
 close) and `cdp_input.py` (real click, insert text). Fill a field by
 clicking into it and inserting the text; press buttons with a real click.
 
 ```sh
-B=~/.local/state/chrome-wayland-catch/bin
+B=~/src/chrome-wayland-catch/bin
 python3 -I $B/cdp_page.py open '<url>' load        # prints targetId and sessionId
 python3 -I $B/cdp_page.py eval <sessionId> launchpad/js/form-fields.js
 python3 -I $B/cdp_input.py click <sessionId> <x> <y>
