@@ -1,0 +1,140 @@
+From: Cyrus Lien <cyrus.lien@canonical.com>
+Date: Wed, 16 Sep 2026 15:45:25 +0800
+Subject: backends/native: Add measured KMS submission time to deadline
+ evasion
+
+The frame clock's swap-to-flip measurement does not capture subsequent
+KMS submission work on the impl thread. This can underestimate the time
+needed to present a frame and cause fullscreen clients to miss vblanks
+after a fresh session start.
+
+Measure process_update() duration for successful, non-test updates with
+a latch CRTC. Maintain a decaying worst-case estimate per CRTC, accessed
+atomically, and add it to the existing deadline-evasion allowance.
+
+This gives both the frame clock and KMS deadline timer additional time
+for submission while retaining the fixed 2 ms margin for asynchronous
+driver and hardware work after submission returns.
+
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/2167418
+Forwarded: not-needed, Ubuntu Noble-specific workaround for Mutter 46;
+ upstream uses KMS-ready timestamp tracking introduced by MR !4825
+ instead of this adjustment to the older deadline-evasion estimator.
+---
+ src/backends/native/meta-kms-crtc.c        | 43 ++++++++++++++++++++++++++++--
+ src/backends/native/meta-kms-crtc.h        |  3 +++
+ src/backends/native/meta-kms-impl-device.c | 13 +++++++++
+ 3 files changed, 57 insertions(+), 2 deletions(-)
+
+diff --git a/src/backends/native/meta-kms-crtc.c b/src/backends/native/meta-kms-crtc.c
+index 037f3a6..9a775e8 100644
+--- a/src/backends/native/meta-kms-crtc.c
++++ b/src/backends/native/meta-kms-crtc.c
+@@ -31,6 +31,11 @@
+ #define DEADLINE_EVASION_US 2000
+ #define DEADLINE_EVASION_WITH_KMS_TOPIC_US 2000
+ 
++/* Decay divisor applied each frame to let the measured commit latency fall
++ * back down after a transient spike, instead of latching the worst case
++ * forever. */
++#define DEADLINE_EVASION_DECAY_DIVISOR 16
++
+ #define MINIMUM_REFRESH_RATE 30.f
+ 
+ typedef struct _MetaKmsCrtcPropTable
+@@ -50,6 +55,11 @@ struct _MetaKmsCrtc
+   MetaKmsCrtcState current_state;
+ 
+   MetaKmsCrtcPropTable prop_table;
++
++  /* Measured worst-case KMS submission duration in microseconds. Written on the
++   * KMS impl thread, read from both the impl thread (deadline computation) and
++   * the main thread (frame clock), hence accessed atomically. */
++  int measured_submission_duration_us;
+ };
+ 
+ G_DEFINE_TYPE (MetaKmsCrtc, meta_kms_crtc, G_TYPE_OBJECT)
+@@ -626,8 +636,37 @@ meta_kms_crtc_determine_deadline (MetaKmsCrtc  *crtc,
+ int64_t
+ meta_kms_crtc_get_deadline_evasion (MetaKmsCrtc *crtc)
+ {
++  int64_t deadline_evasion_us;
++
+   if (meta_is_topic_enabled (META_DEBUG_KMS))
+-    return DEADLINE_EVASION_WITH_KMS_TOPIC_US;
++    deadline_evasion_us = DEADLINE_EVASION_WITH_KMS_TOPIC_US;
++  else
++    deadline_evasion_us = DEADLINE_EVASION_US;
++
++  return deadline_evasion_us +
++         g_atomic_int_get (&crtc->measured_submission_duration_us);
++}
++
++void
++meta_kms_crtc_notify_submission_duration (MetaKmsCrtc *crtc,
++                                          int64_t      duration_us)
++{
++  int old_us;
++  int new_us;
++
++  if (duration_us < 0)
++    duration_us = 0;
++  else if (duration_us > G_MAXINT)
++    duration_us = G_MAXINT;
++
++  /* Single writer (KMS impl thread): jump up to a new worst case immediately,
++   * decay down slowly so an isolated slow commit does not inflate the budget
++   * indefinitely. */
++  old_us = g_atomic_int_get (&crtc->measured_submission_duration_us);
++  if (duration_us > old_us)
++    new_us = (int) duration_us;
+   else
+-    return DEADLINE_EVASION_US;
++    new_us = old_us - (old_us - (int) duration_us) / DEADLINE_EVASION_DECAY_DIVISOR;
++
++  g_atomic_int_set (&crtc->measured_submission_duration_us, new_us);
+ }
+diff --git a/src/backends/native/meta-kms-crtc.h b/src/backends/native/meta-kms-crtc.h
+index d9682fc..7cd2e6c 100644
+--- a/src/backends/native/meta-kms-crtc.h
++++ b/src/backends/native/meta-kms-crtc.h
+@@ -67,3 +67,6 @@ META_EXPORT_TEST
+ gboolean meta_kms_crtc_is_active (MetaKmsCrtc *crtc);
+ 
+ int64_t meta_kms_crtc_get_deadline_evasion (MetaKmsCrtc *crtc);
++
++void meta_kms_crtc_notify_submission_duration (MetaKmsCrtc *crtc,
++                                               int64_t      duration_us);
+diff --git a/src/backends/native/meta-kms-impl-device.c b/src/backends/native/meta-kms-impl-device.c
+index 9288c05..3348bd0 100644
+--- a/src/backends/native/meta-kms-impl-device.c
++++ b/src/backends/native/meta-kms-impl-device.c
+@@ -1317,6 +1317,7 @@ do_process (MetaKmsImplDevice *impl_device,
+   CrtcFrame *crtc_frame = NULL;
+   MetaKmsFeedback *feedback;
+   MetaKmsResourceChanges changes = META_KMS_RESOURCE_CHANGE_NONE;
++  int64_t process_start_us;
+ 
+   COGL_TRACE_BEGIN_SCOPED (MetaKmsImplDeviceProcess,
+                            "Meta::KmsImplDevice::do_process()");
+@@ -1368,8 +1369,20 @@ do_process (MetaKmsImplDevice *impl_device,
+         }
+     }
+ 
++  process_start_us = g_get_monotonic_time ();
+   feedback = klass->process_update (impl_device, update, flags);
+ 
++  if (!(flags & META_KMS_UPDATE_FLAG_TEST_ONLY) && latch_crtc &&
++      meta_kms_feedback_get_result (feedback) == META_KMS_FEEDBACK_PASSED)
++    {
++      /* The frame clock records the "flip" time when the update is posted to
++       * this thread. Add the synchronous process_update() duration to the
++       * fixed margin reserved for work after a nonblocking submission. */
++      meta_kms_crtc_notify_submission_duration (latch_crtc,
++                                               g_get_monotonic_time () -
++                                               process_start_us);
++    }
++
+   if (meta_kms_feedback_get_result (feedback) != META_KMS_FEEDBACK_PASSED &&
+       crtc_frame)
+     crtc_frame->pending_page_flip = FALSE;
