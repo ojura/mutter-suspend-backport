@@ -1,0 +1,100 @@
+From: =?UTF-8?q?Juraj_Or=C5=A1uli=C4=87?= <juraj.orsulic@fer.hr>
+Date: Mon, 16 Nov 2026 21:54:42 +0100
+Subject: tests/toplevel-suspend: Test reusing a wl_surface for a toplevel
+
+The case shows a toplevel, destroys it, waits for its window actor to be
+freed, and shows a new toplevel on the same wl_surface. Without
+window-actor-Disconnect-notify-mapped-when-disconnecting.patch, showing
+the second toplevel runs the notify::mapped handler of the freed window
+actor: AddressSanitizer reports a heap-use-after-free in
+is_surface_actor_mapped_changed(), and a build without it failed in 9 of
+10 runs.
+
+Upstream does not need the case, because since mutter 47 the new
+toplevel gets a new surface actor.
+
+Forwarded: not-needed
+---
+ src/tests/wayland-test-clients/xdg-toplevel-suspended.c |   64 ++++++++++++++++
+ 1 file changed, 64 insertions(+)
+
+--- a/src/tests/wayland-test-clients/xdg-toplevel-suspended.c
++++ b/src/tests/wayland-test-clients/xdg-toplevel-suspended.c
+@@ -303,6 +303,69 @@ test_hidden_subsurface_added_when_shown
+   wl_surface_destroy (child_surface);
+ }
+ 
++static void
++handle_xdg_surface_configure_ack (void               *data,
++                                  struct xdg_surface *xdg_surface,
++                                  uint32_t            serial)
++{
++  gboolean *configured = data;
++
++  xdg_surface_ack_configure (xdg_surface, serial);
++  *configured = TRUE;
++}
++
++static const struct xdg_surface_listener ack_xdg_surface_listener = {
++  handle_xdg_surface_configure_ack,
++};
++
++static void
++test_toplevel_created_again (WaylandDisplay *display)
++{
++  struct wl_surface *wl_surface;
++  int i;
++
++  g_debug ("Testing a toplevel created again on the same wl_surface");
++
++  wl_surface = wl_compositor_create_surface (display->compositor);
++
++  for (i = 0; i < 2; i++)
++    {
++      struct xdg_surface *xdg_surface;
++      struct xdg_toplevel *xdg_toplevel;
++      gboolean configured = FALSE;
++      int64_t end_time_us;
++
++      xdg_surface = xdg_wm_base_get_xdg_surface (display->xdg_wm_base,
++                                                 wl_surface);
++      xdg_surface_add_listener (xdg_surface, &ack_xdg_surface_listener,
++                                &configured);
++      xdg_toplevel = xdg_surface_get_toplevel (xdg_surface);
++      wl_surface_commit (wl_surface);
++      while (!configured)
++        wayland_display_dispatch (display);
++
++      draw_surface (display, wl_surface, 100, 100, 0xffffffff);
++      wl_surface_commit (wl_surface);
++      wait_for_window_shown (display, wl_surface);
++
++      xdg_toplevel_destroy (xdg_toplevel);
++      xdg_surface_destroy (xdg_surface);
++      wl_surface_attach (wl_surface, NULL, 0, 0);
++      wl_surface_commit (wl_surface);
++
++      /* Give the window actor of the destroyed toplevel time to be freed
++       * before the next toplevel maps the same surface actor. */
++      end_time_us = g_get_monotonic_time () + G_USEC_PER_SEC;
++      while (g_get_monotonic_time () < end_time_us)
++        {
++          wl_display_roundtrip (display->display);
++          g_usleep (50 * 1000);
++        }
++    }
++
++  wl_surface_destroy (wl_surface);
++}
++
+ int
+ main (int    argc,
+       char **argv)
+@@ -322,6 +385,7 @@ main (int    argc,
+   test_screen_shield (display);
+   test_obstructed_hidden_subsurface (display);
+   test_hidden_subsurface_added_when_shown (display);
++  test_toplevel_created_again (display);
+ 
+   return EXIT_SUCCESS;
+ }
