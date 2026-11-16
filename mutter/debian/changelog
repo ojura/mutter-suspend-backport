@@ -1,4 +1,4 @@
-mutter (46.2-1ubuntu0.24.04.18+local1) noble; urgency=medium
+mutter (46.2-1ubuntu0.24.04.18+local2) noble; urgency=medium
 
   * Suspend a covered window that has a hidden subsurface. mutter kept a
     window active while any of its surface actors was not obscured, and
@@ -11,8 +11,15 @@ mutter (46.2-1ubuntu0.24.04.18+local1) noble; urgency=medium
   * d/p/tests-toplevel-suspend-Test-windows-with-a-hidden-subsurface.patch:
     test that a covered window with a hidden subsurface is suspended, and
     that a shown window stays active after it adds a hidden subsurface.
+  * Disconnect the notify::mapped handler of a surface actor when it leaves
+    its window actor (merge request 5347). gnome-shell crashed when a
+    client created a new xdg_toplevel on the wl_surface of a destroyed one,
+    because 46.2 gives the new window the old surface actor, and showing it
+    ran the handler of the freed window actor:
+    - d/p/window-actor-Disconnect-notify-mapped-when-disconnecting.patch
+    - d/p/tests-toplevel-suspend-Test-reusing-a-wl_surface-for-a-toplevel.patch
 
- -- Juraj Oršulić <juraj.orsulic@fer.hr>  Thu, 12 Nov 2026 01:15:01 +0100
+ -- Juraj Oršulić <juraj.orsulic@fer.hr>  Mon, 16 Nov 2026 21:54:55 +0100
 
 mutter (46.2-1ubuntu0.24.04.18) noble; urgency=medium
 
