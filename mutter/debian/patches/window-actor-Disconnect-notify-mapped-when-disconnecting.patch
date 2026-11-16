@@ -1,0 +1,30 @@
+From: everyx <lunt.luo@gmail.com>
+Date: Fri, 18 Sep 2026 15:51:14 +0800
+Subject: window-actor: Disconnect notify::mapped when disconnecting surface
+ actor
+
+disconnect_surface_actor_from() disconnects the notify::is-obscured
+handler but leaves the notify::mapped one connected. 46.2 keeps the
+surface actor when a client creates a new xdg_toplevel on the same
+wl_surface (mutter 47 creates a new one, merge request 3667), so showing
+the new window runs the handler with the freed window actor of the
+destroyed one, and gnome-shell crashes.
+
+Fixes: b3fad292b ("window-actor: Track state affecting suspend inhibation explicitly")
+Origin: https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/5347
+---
+ src/compositor/meta-window-actor.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/src/compositor/meta-window-actor.c
++++ b/src/compositor/meta-window-actor.c
+@@ -496,6 +496,9 @@ disconnect_surface_actor_from (MetaSurfa
+   g_signal_handlers_disconnect_by_func (surface_actor,
+                                         is_surface_actor_obscured_changed,
+                                         window_actor);
++  g_signal_handlers_disconnect_by_func (surface_actor,
++                                        is_surface_actor_mapped_changed,
++                                        window_actor);
+   if (meta_surface_actor_is_obscured (surface_actor))
+     priv->n_obscured_surfaces--;
+   if (clutter_actor_is_mapped (CLUTTER_ACTOR (surface_actor)))

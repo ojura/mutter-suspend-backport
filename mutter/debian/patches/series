@@ -70,3 +70,4 @@ window-actor-Track-state-affecting-suspend-inhibation-ex.patch
 window-actor-Handle-visibility-condition-for-suspending-w.patch
 tests-wayland-toplevel-suspend-Add-test-for-suspending-on.patch
 tests-toplevel-suspend-Test-windows-with-a-hidden-subsurface.patch
+window-actor-Disconnect-notify-mapped-when-disconnecting.patch
