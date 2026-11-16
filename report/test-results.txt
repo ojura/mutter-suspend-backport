@@ -1,4 +1,4 @@
-Headless gnome-shell 46.0-0ubuntu6~24.04.17, final run (out/tests/run3), stock libmutter (results of out/tests/run2/stock) versus the one built from commit 8fa9f5d.
+Headless gnome-shell 46.0-0ubuntu6~24.04.17, final run (out/tests/run3), stock libmutter (results of out/tests/run2/stock) versus the one built from commit 8fa9f5d (the build of 4caa013, which changes only patch headers and the changelog, has the same libmutter build ID).
 Each line gives the state at the end of the phase and the changes during it, with times from the start of the phase.
 
 covered-hidden-subsurface
@@ -121,3 +121,4 @@ mutter test suite: patched from the package build of commit 8fa9f5d (out/46.2-1u
 Case for a reused wl_surface (out/tests/reuse-case/reuse-case.c, added by tests-toplevel-suspend-Test-reusing-a-wl_surface-for-a-toplevel.patch), run alone:
   plain build tree of the package, ten runs each (out/tests/reuse-case/46-loop-*.log): without window-actor-Disconnect-notify-mapped-when-disconnecting.patch 1 passed and 9 failed; with it 10 passed.
   AddressSanitizer build of the same source (out/tests/reuse-case/46-*-final-testlog.txt): without the fix patch "heap-use-after-free ../src/compositor/meta-window-actor.c:483 in is_surface_actor_mapped_changed"; with it ok.
+  The same sequence with an xdg_popup under AddressSanitizer (out/tests/reuse-case/reuse-popup-case.c, 46-popup-*-testlog.txt): the same report without the fix patch; with it ok.

@@ -3,7 +3,7 @@
 
 usage: launchpad/make_sru_debdiff.py <bug number> [tested commit]
 
-It exports mutter/ from the tested commit (default 8fa9f5d, the commit the
+It exports mutter/ from the tested commit (default 4caa013, the commit the
 packages in out/ were built and tested from), and changes only what an
 upload to noble needs:
 
@@ -104,7 +104,7 @@ def main():
     if len(sys.argv) < 2 or not sys.argv[1].isdigit():
         raise SystemExit(__doc__)
     bug = sys.argv[1]
-    commit = sys.argv[2] if len(sys.argv) > 2 else '8fa9f5d'
+    commit = sys.argv[2] if len(sys.argv) > 2 else '4caa013'
     with tempfile.TemporaryDirectory(prefix='mutter-sru-') as work:
         work = Path(work)
         (work / 'tested').mkdir()
