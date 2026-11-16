@@ -22,7 +22,9 @@ b3fad292b074ad573a73999fa89d55b73a8e0f32 window-actor: Track state affecting sus
 
 With these, the window actor counts its mapped surface actors, its obscured surface actors and its mapped clones. The window counts as visible while one of its clones is mapped, or while the window actor itself is mapped and not every mapped surface actor is obscured. A hidden subsurface is not mapped, so it no longer keeps the window active. The merge request was written to suspend windows while the screen is locked and does not refer to an issue; I did not find an upstream issue or a Launchpad bug about the hidden subsurface case. Ubuntu 26.04 (mutter 50.1) and 26.10 (mutter 51.0) have the fix, and Ubuntu 22.04 (mutter 42.9) predates the suspended state, which mutter 45 introduced, so 24.04 is the supported release that needs it.
 
-The two window-actor commits apply to 46.2-1ubuntu0.24.04.18 with line offsets only. The test commit needed two adjustments for 46.2, which its patch header describes. The attached debdiff adds the three commits as patches, and a fourth patch, not from upstream, with two cases for hidden subsurfaces in the /wayland/toplevel/suspended test.
+The two window-actor commits apply to 46.2-1ubuntu0.24.04.18 with line offsets only. The test commit needed two adjustments for 46.2, which its patch header describes. The attached debdiff adds the three commits as patches, a fourth patch, not from upstream, with two cases for hidden subsurfaces in the /wayland/toplevel/suspended test, and two more patches for a crash that the first commit causes on 46.2.
+
+The first commit connects a notify::mapped handler to every surface actor of a window and never disconnects it. 46.2 keeps a surface actor when a client creates a new xdg_toplevel on the same wl_surface, while mutter 47 creates a new one (merge request 3667, https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/3667), so on 46.2 showing the new window runs the handler with the freed window actor of the destroyed one, and gnome-shell crashes. The fifth patch is merge request 5347, https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/5347, which disconnects the handler and is not merged yet. The sixth patch, not from upstream, adds a case for this to the /wayland/toplevel/suspended test.
 
 [ Test Plan ]
 
@@ -38,7 +40,7 @@ In a GNOME session on Wayland:
 2. Cover both windows completely with a fullscreen window, for example a browser after pressing F11, for 10 seconds, then leave fullscreen.
 3. With the fix, both programs print a configure line with suspended=1 about 3 seconds after they are covered, and one with suspended=0 when they are uncovered. With 46.2-1ubuntu0.24.04.18, only "plain" prints suspended=1.
 
-The package build runs the /wayland/toplevel/suspended test, which the debdiff extends. With the debdiff all nine of its cases pass. With the two window-actor patches reversed, the upstream screen shield case waits until meson stops the test after 360 seconds, and with that case left out, the new hidden subsurface case waits until the timeout instead; the six cases that 46.2 already has pass either way. The suspend-state-timeout test passes with and without the patches.
+The package build runs the /wayland/toplevel/suspended test, which the debdiff extends. With the debdiff all ten of its cases pass. With the two window-actor patches reversed, the upstream screen shield case waits until meson stops the test after 360 seconds, and with that case left out, the new hidden subsurface case waits until the timeout instead; the six cases that 46.2 already has pass either way. With the fifth patch removed, the case for a reused wl_surface fails in 9 of 10 runs, and with AddressSanitizer it reports a heap-use-after-free in is_surface_actor_mapped_changed(). The suspend-state-timeout test passes with and without the patches.
 
 I also ran ten scripted cases with 66 checks, each the state of a window at the end of a timed phase, in an isolated headless gnome-shell 46.0-0ubuntu6~24.04.17, once with the installed libmutter-14.so.0 and once with the one built from the debdiff (loaded through LD_LIBRARY_PATH; /proc/<pid>/maps showed which one each shell used). With both, windows stayed active when they were shown with a hidden subsurface, half covered, covered except for a mapped subsurface outside the main surface, shown as clones in the Activities overview while covered, after a hidden subsurface was added with a parent commit that draws nothing, and after a covered subsurface was unmapped while the rest of the window was visible. They became active again as soon as they were uncovered, unminimized or unlocked. Covered and minimized windows without hidden subsurfaces were suspended with both. Covered windows with a hidden subsurface were suspended only with the debdiff, also when the subsurface had been mapped and was unmapped again while covered.
 
@@ -51,6 +53,8 @@ Apart from the hidden subsurface case, the backport changes two situations, as m
 - While the screen is locked, GNOME Shell hides the window groups. With the backport, windows are suspended about 3 seconds after the screen locks and are active again when it is unlocked. With 46.2-1ubuntu0.24.04.18 they stay active behind the lock screen. Suspending windows behind the lock screen is the purpose of the upstream merge request.
 - A minimized window, or a window on another workspace, is active while the Activities overview shows it, and is suspended again about 3 seconds after the overview closes. With 46.2-1ubuntu0.24.04.18 such windows stay suspended in the overview, because update_suspend_state() checked MetaWindow::hidden.
 
+Without the fifth patch, the backport crashes gnome-shell when a client creates a new xdg_toplevel on the wl_surface of a destroyed one; on the affected machine an Electron application did that. The fifth patch only disconnects a handler that the first patch connects, as disconnect_surface_actor_from() already does for the notify::is-obscured handler.
+
 Only Wayland clients that bind xdg_wm_base version 6 or later receive the suspended state. mutter reads the state only to build the xdg_toplevel configure (src/wayland/meta-window-wayland.c and src/wayland/meta-wayland-window-configuration.c), so X11 and Xwayland clients and Xorg sessions are not affected.
 
 [ Other Info ]
@@ -59,7 +63,7 @@ The package build with the debdiff and Ubuntu's own amd64 build of 46.2-1ubuntu0
 
 In the headless shell used for these tests, with and without the patches, a window covered by another window of exactly the same size and position was not suspended, and with a cover 2 pixels larger on each side it was. The covers in the tests therefore reach at least 2 pixels past the covered window.
 
-The fourth patch in the debdiff is mine and not from upstream. It only adds test cases and can be dropped.
+The fourth and sixth patches in the debdiff are mine and not from upstream. They only add test cases and can be dropped.
 
 ATTACHMENTS
 

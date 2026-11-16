@@ -1,0 +1,7 @@
+Comment for https://bugs.launchpad.net/ubuntu/+source/mutter/+bug/2174026, with out/mutter_46.2-1ubuntu0.24.04.19.debdiff attached (patch box checked).
+
+The debdiff I attached on 2026-11-12 makes gnome-shell crash; please use the attached one instead.
+
+The first backported commit connects a notify::mapped handler to every surface actor of a window and never disconnects it. 46.2 keeps a surface actor when a client creates a new xdg_toplevel on the same wl_surface (mutter 47 creates a new one, merge request 3667), so showing the new window runs the handler with the freed window actor of the destroyed one. With 46.2-1ubuntu0.24.04.18+local1, gnome-shell crashed this way twice in one day.
+
+The new debdiff adds upstream merge request 5347 (https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/5347, not merged yet), which disconnects the handler, and a test case that shows two toplevels one after the other on the same wl_surface. Without the fix, the case fails in 9 of 10 runs of the package's test suite, and with AddressSanitizer it reports a heap-use-after-free in is_surface_actor_mapped_changed(); with the fix, it passes. Otherwise the package build gives the same test results as before, and the 66 checks in the headless shell give the same results as with the first debdiff. I built and tested it as 46.2-1ubuntu0.24.04.18+local2, and the description now lists the two new patches.
