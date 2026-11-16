@@ -2,13 +2,13 @@ From: =?UTF-8?q?Juraj_Or=C5=A1uli=C4=87?= <juraj.orsulic@fer.hr>
 Date: Mon, 16 Nov 2026 21:54:42 +0100
 Subject: tests/toplevel-suspend: Test reusing a wl_surface for a toplevel
 
-The case shows a toplevel, destroys it, waits for its window actor to be
-freed, and shows a new toplevel on the same wl_surface. Without
-window-actor-Disconnect-notify-mapped-when-disconnecting.patch, showing
-the second toplevel runs the notify::mapped handler of the freed window
-actor: AddressSanitizer reports a heap-use-after-free in
-is_surface_actor_mapped_changed(), and a build without it failed in 9 of
-10 runs.
+The case shows a toplevel, destroys it, waits one second so that its
+window actor is freed, and shows a new toplevel on the same wl_surface.
+Without window-actor-Disconnect-notify-mapped-when-disconnecting.patch,
+showing the second toplevel runs the notify::mapped handler of the freed
+window actor: AddressSanitizer reports a heap-use-after-free in
+is_surface_actor_mapped_changed(), and without AddressSanitizer the case
+failed in 9 of 10 runs.
 
 Upstream does not need the case, because since mutter 47 the new
 toplevel gets a new surface actor.

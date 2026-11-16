@@ -8,7 +8,10 @@ handler but leaves the notify::mapped one connected. 46.2 keeps the
 surface actor when a client creates a new xdg_toplevel on the same
 wl_surface (mutter 47 creates a new one, merge request 3667), so showing
 the new window runs the handler with the freed window actor of the
-destroyed one, and gnome-shell crashes.
+destroyed one, which can crash gnome-shell.
+
+The change is commit 84f0d55c of the merge request; this description was
+written for the 46.2 backport.
 
 Fixes: b3fad292b ("window-actor: Track state affecting suspend inhibation explicitly")
 Origin: https://gitlab.gnome.org/GNOME/mutter/-/merge_requests/5347
