@@ -3,7 +3,7 @@
 
 usage: launchpad/make_sru_debdiff.py <bug number> [tested commit]
 
-It exports mutter/ from the tested commit (default 1c57406, the commit the
+It exports mutter/ from the tested commit (default 8fa9f5d, the commit the
 packages in out/ were built and tested from), and changes only what an
 upload to noble needs:
 
@@ -27,12 +27,14 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 UBUNTU = REPO / 'out' / 'ubuntu-source'
 VERSION = '46.2-1ubuntu0.24.04.19'
-TESTED_VERSION = '46.2-1ubuntu0.24.04.18+local1'
+TESTED_VERSION = '46.2-1ubuntu0.24.04.18+local2'
 PATCHES = [
     'window-actor-Track-state-affecting-suspend-inhibation-ex.patch',
     'window-actor-Handle-visibility-condition-for-suspending-w.patch',
     'tests-wayland-toplevel-suspend-Add-test-for-suspending-on.patch',
     'tests-toplevel-suspend-Test-windows-with-a-hidden-subsurface.patch',
+    'window-actor-Disconnect-notify-mapped-when-disconnecting.patch',
+    'tests-toplevel-suspend-Test-reusing-a-wl_surface-for-a-toplevel.patch',
 ]
 
 
@@ -102,7 +104,7 @@ def main():
     if len(sys.argv) < 2 or not sys.argv[1].isdigit():
         raise SystemExit(__doc__)
     bug = sys.argv[1]
-    commit = sys.argv[2] if len(sys.argv) > 2 else '1c57406'
+    commit = sys.argv[2] if len(sys.argv) > 2 else '8fa9f5d'
     with tempfile.TemporaryDirectory(prefix='mutter-sru-') as work:
         work = Path(work)
         (work / 'tested').mkdir()

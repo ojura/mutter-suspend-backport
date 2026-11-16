@@ -66,10 +66,10 @@ python3 -I launchpad/make_sru_debdiff.py <bug number>
 ```
 
 It writes `out/mutter_46.2-1ubuntu0.24.04.19.debdiff`: the source of commit
-1c57406, from which the packages in `out/` were built and tested, with the
+8fa9f5d, from which the packages in `out/` were built and tested, with the
 version 46.2-1ubuntu0.24.04.19, `(LP: #<bug number>)` in the changelog,
 the current date in the changelog trailer, and a `Bug-Ubuntu:` line in each
-of the four patches. It stops if anything else differs from the tested
+of the six patches. It stops if anything else differs from the tested
 source. It needs Ubuntu's source package of 46.2-1ubuntu0.24.04.18 in
 `out/ubuntu-source/`, and dpkg-dev, devscripts and diffstat.
 
