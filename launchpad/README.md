@@ -18,6 +18,8 @@ python3 -I $B/cdp_page.py close <targetId> <sessionId>
 
 ## Step 1: file the bug with the client attached
 
+The bug is filed as LP: #2174026, <https://bugs.launchpad.net/bugs/2174026>.
+
 Form: <https://bugs.launchpad.net/ubuntu/+source/mutter/+filebug?no-redirect>.
 Without `no-redirect`, Launchpad sends people filing Ubuntu bugs to the
 `ubuntu-bug` guidance instead (`redirect_ubuntu_filebug` in
@@ -27,15 +29,10 @@ Attachment: `tests/client/suspend_client.c`, description
 `suspend_client.c: the minimal client from the test plan`, with the patch
 box left unchecked.
 
-Seen in Juraj's Chrome on 2026-11-12, before the login failed:
-
-- <https://launchpad.net/> showed "Log in / Register", so he was not signed in.
-- <https://launchpad.net/+login> led to
-  `https://login.launchpad.net/<token>/+decide` with the fields `id_email`
-  (name `email`), the radio buttons `id_new_user` and `id_returning_user`
-  (the second checked), `id_password` (name `password`) and the button
-  "Log in". Chrome's password manager filled both fields. After a real
-  click on "Log in" the page said "Incorrect email/password combination".
+The login page, <https://launchpad.net/+login>, leads to
+`https://login.launchpad.net/<token>/+decide` with the fields `id_email`
+(name `email`), the radio buttons `id_new_user` and `id_returning_user`,
+`id_password` (name `password`) and the button "Log in".
 
 Not seen in the browser; read from Launchpad's source
 (`lib/lp/bugs/browser/bugtarget.py`, `templates/bugtarget-filebug-search.pt`):

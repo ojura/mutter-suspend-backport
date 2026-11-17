@@ -1,2 +1,4 @@
 # Package builds and test runs write here; see build/ and tests/.
 /out/
+# Python writes bytecode beside tests/run_cases.py when compare.py imports it.
+__pycache__/
