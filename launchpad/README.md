@@ -29,11 +29,6 @@ Attachment: `tests/client/suspend_client.c`, description
 `suspend_client.c: the minimal client from the test plan`, with the patch
 box left unchecked.
 
-The login page, <https://launchpad.net/+login>, leads to
-`https://login.launchpad.net/<token>/+decide` with the fields `id_email`
-(name `email`), the radio buttons `id_new_user` and `id_returning_user`,
-`id_password` (name `password`) and the button "Log in".
-
 Not seen in the browser; read from Launchpad's source
 (`lib/lp/bugs/browser/bugtarget.py`, `templates/bugtarget-filebug-search.pt`):
 
